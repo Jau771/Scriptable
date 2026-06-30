@@ -97,10 +97,8 @@ const LUNAR_INFO = [
 
 const CONFIG = {
   maxRows: 6,
-  gap: 8,
   cornerRadius: 11,
   padding: 16,
-  maxNameLength: 4,
   urgentDays: 3,
   warningDays: 7,
 };
@@ -275,10 +273,6 @@ function getCountdowns(now = new Date()) {
   });
 }
 
-function truncateName(name, limit = CONFIG.maxNameLength) {
-  return name.length <= limit ? name : `${name.slice(0, limit)}…`;
-}
-
 function normalizeFamily(family) {
   if (family === 'systemSmall' || family === 'small') return 'small';
   if (family === 'systemLarge' || family === 'large') return 'large';
@@ -287,9 +281,49 @@ function normalizeFamily(family) {
 
 function getLayout(family) {
   const normalized = normalizeFamily(family);
-  if (normalized === 'small') return { family: normalized, columns: 3, fontSize: 11, maxRows: 6, padding: 14 };
-  if (normalized === 'large') return { family: normalized, columns: 5, fontSize: 13, maxRows: 9, padding: 18 };
-  return { family: normalized, columns: 5, fontSize: 12, maxRows: 6, padding: 16 };
+  if (normalized === 'small') {
+    return {
+      family: normalized,
+      columns: 3,
+      fontSize: 11,
+      maxRows: 6,
+      padding: 12,
+      itemWidth: 50,
+      itemHeight: 25,
+      rowGap: 7,
+      capsuleHorizontalPadding: 2,
+      minimumScaleFactor: 0.55,
+      usesFlexibleSpacers: true,
+    };
+  }
+  if (normalized === 'large') {
+    return {
+      family: normalized,
+      columns: 5,
+      fontSize: 13,
+      maxRows: 9,
+      padding: 18,
+      itemWidth: 61,
+      itemHeight: 26,
+      rowGap: 8,
+      capsuleHorizontalPadding: 3,
+      minimumScaleFactor: 0.6,
+      usesFlexibleSpacers: true,
+    };
+  }
+  return {
+    family: normalized,
+    columns: 5,
+    fontSize: 11,
+    maxRows: 6,
+    padding: 14,
+    itemWidth: 58,
+    itemHeight: 25,
+    rowGap: 7,
+    capsuleHorizontalPadding: 2,
+    minimumScaleFactor: 0.55,
+    usesFlexibleSpacers: true,
+  };
 }
 
 function filterItems(items, options = {}) {
@@ -308,7 +342,7 @@ function getWidgetPlan({ family = 'medium', now = new Date(), options = {} } = {
   const limit = layout.columns * layout.maxRows;
   const visibleItems = items.slice(0, limit).map((item) => ({
     ...item,
-    label: `${truncateName(item.name)} ${item.days === 0 ? '今天' : `${item.days}天`}`,
+    label: `${item.name} ${item.days === 0 ? '今天' : `${item.days}天`}`,
   }));
 
   return {
@@ -333,21 +367,22 @@ function colorForDays(days, colors) {
   return colors.normal;
 }
 
-function addCapsule(row, item, fontSize, colors) {
+function addCapsule(row, item, layout, colors) {
   const capsule = row.addStack();
   capsule.layoutHorizontally();
   capsule.centerAlignContent();
+  capsule.size = new Size(layout.itemWidth, layout.itemHeight);
   capsule.cornerRadius = CONFIG.cornerRadius;
   capsule.borderWidth = 1;
   capsule.borderColor = colors.border;
   capsule.backgroundColor = new Color('#FFFFFF', 0.12);
-  capsule.setPadding(5, 8, 5, 8);
+  capsule.setPadding(4, layout.capsuleHorizontalPadding, 4, layout.capsuleHorizontalPadding);
 
   const text = capsule.addText(item.label);
-  text.font = Font.mediumSystemFont(fontSize);
+  text.font = Font.mediumSystemFont(layout.fontSize);
   text.textColor = colorForDays(item.days, colors);
   text.lineLimit = 1;
-  text.minimumScaleFactor = 0.72;
+  text.minimumScaleFactor = layout.minimumScaleFactor;
   text.centerAlignText();
 }
 
@@ -363,15 +398,14 @@ function createWidget({ family, now = new Date(), options = parseOptions() } = {
     const row = widget.addStack();
     row.layoutHorizontally();
     row.centerAlignContent();
-    row.spacing = CONFIG.gap;
 
     const chunk = plan.visibleItems.slice(i, i + plan.columns);
     for (const item of chunk) {
-      addCapsule(row, item, plan.fontSize, colors);
-      if (item !== chunk[chunk.length - 1]) row.addSpacer(CONFIG.gap);
+      addCapsule(row, item, plan, colors);
+      if (item !== chunk[chunk.length - 1]) row.addSpacer();
     }
 
-    if (i + plan.columns < plan.visibleItems.length) widget.addSpacer(8);
+    if (i + plan.columns < plan.visibleItems.length) widget.addSpacer(plan.rowGap);
   }
 
   return widget;

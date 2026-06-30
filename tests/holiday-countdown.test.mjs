@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
 import test from 'node:test';
 
-import {
+const require = createRequire(import.meta.url);
+const {
   getCountdowns,
   getWidgetPlan,
-} from '../scripts/Holiday_Countdown.scriptable.js';
+} = require('../scripts/Holiday_Countdown.scriptable.js');
 
 test('returns upcoming countdowns sorted by days', () => {
   const items = getCountdowns(new Date(2026, 5, 30));

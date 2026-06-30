@@ -144,7 +144,7 @@ function lunarYearDays(year) {
   return sum + leapDays(year);
 }
 
-export function solarToLunar(year, month, day) {
+function solarToLunar(year, month, day) {
   const baseDate = new Date(1900, 0, 31);
   const targetDate = new Date(year, month - 1, day);
   let offset = Math.floor((targetDate - baseDate) / 86400000);
@@ -222,7 +222,7 @@ function findSolarDateByLunar(targetMonth, targetDay, year) {
   return null;
 }
 
-export function getCountdowns(now = new Date()) {
+function getCountdowns(now = new Date()) {
   const today = startOfDay(now);
   const year = today.getFullYear();
   const results = [];
@@ -302,7 +302,7 @@ function filterItems(items, options = {}) {
   return filtered;
 }
 
-export function getWidgetPlan({ family = 'medium', now = new Date(), options = {} } = {}) {
+function getWidgetPlan({ family = 'medium', now = new Date(), options = {} } = {}) {
   const layout = getLayout(family);
   const items = filterItems(getCountdowns(now), options);
   const limit = layout.columns * layout.maxRows;
@@ -351,7 +351,7 @@ function addCapsule(row, item, fontSize, colors) {
   text.centerAlignText();
 }
 
-export async function createWidget({ family, now = new Date(), options = parseOptions() } = {}) {
+function createWidget({ family, now = new Date(), options = parseOptions() } = {}) {
   const widget = new ListWidget();
   const plan = getWidgetPlan({ family, now, options });
   const colors = makeColors();
@@ -377,19 +377,36 @@ export async function createWidget({ family, now = new Date(), options = parseOp
   return widget;
 }
 
-async function runInScriptable() {
+function runInScriptable() {
   const family = typeof config !== 'undefined' ? config.widgetFamily : 'medium';
-  const widget = await createWidget({ family });
+  const widget = createWidget({ family });
 
   if (typeof config !== 'undefined' && config.runsInWidget) {
     Script.setWidget(widget);
+    Script.complete();
+    return;
   } else if (typeof widget.presentMedium === 'function') {
-    await widget.presentMedium();
+    Promise.resolve(widget.presentMedium())
+      .then(() => Script.complete())
+      .catch((error) => {
+        console.error(error);
+        Script.complete();
+      });
+    return;
   }
 
   if (typeof Script !== 'undefined') Script.complete();
 }
 
-if (typeof module === 'undefined' && typeof Script !== 'undefined') {
-  await runInScriptable();
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    solarToLunar,
+    getCountdowns,
+    getWidgetPlan,
+    createWidget,
+  };
+}
+
+if (typeof Script !== 'undefined' && typeof config !== 'undefined') {
+  runInScriptable();
 }

@@ -41,6 +41,8 @@ https://raw.githubusercontent.com/Jau771/Scriptable/main/scripts/Oil_Widget.scri
 The widget fetches live oil prices from `m.qiyoujiage.com`, caches the last
 successful result, and displays 92/95/98 gasoline and diesel prices.
 
+Refresh interval: 6 hours.
+
 Optional widget parameter:
 
 ```text

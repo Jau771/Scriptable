@@ -2,7 +2,8 @@
 // Paste this file into Scriptable or import it from a raw GitHub URL.
 
 const DEFAULT_REGION = 'shandong/dezhou';
-const CACHE_PREFIX = 'scriptable_oil_widget_';
+const CACHE_PREFIX = 'jau771_oil_widget_';
+const CACHE_REFRESH_HOURS = 6;
 const DEFAULT_PRICES = {
   p92: null,
   p95: null,
@@ -407,7 +408,11 @@ function readCache(region) {
 
 function writeCache(region, data) {
   if (typeof Keychain === 'undefined') return;
-  Keychain.set(getCacheKey(region), JSON.stringify(data));
+  try {
+    Keychain.set(getCacheKey(region), JSON.stringify(data));
+  } catch (error) {
+    console.warn(`Oil widget cache skipped: ${error.message || error}`);
+  }
 }
 
 async function loadOilData(region, { showTrend = true } = {}) {
@@ -435,7 +440,7 @@ function createOilWidget({ family = 'medium', data, now = new Date(), showTrend 
   const widget = new ListWidget();
   widget.backgroundColor = colors.background;
   widget.setPadding(plan.widgetPadding, plan.widgetPadding, plan.widgetPadding, plan.widgetPadding);
-  widget.refreshAfterDate = new Date(Date.now() + 6 * 60 * 60 * 1000);
+  widget.refreshAfterDate = new Date(Date.now() + CACHE_REFRESH_HOURS * 60 * 60 * 1000);
 
   addHeader(widget, plan, colors);
   widget.addSpacer(plan.sectionGap);
@@ -471,8 +476,10 @@ async function runInScriptable() {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
+    CACHE_REFRESH_HOURS,
     DEFAULT_REGION,
     createOilWidget,
+    getCacheKey,
     getOilWidgetPlan,
     normalizeRegionParam,
     parseOilHtml,

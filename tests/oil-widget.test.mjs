@@ -4,7 +4,9 @@ import test from 'node:test';
 
 const require = createRequire(import.meta.url);
 const {
+  CACHE_REFRESH_HOURS,
   createOilWidget,
+  getCacheKey,
   getOilWidgetPlan,
   normalizeRegionParam,
   parseOilHtml,
@@ -142,6 +144,14 @@ test('normalizes Scriptable oil widget parameters', () => {
     showTrend: false,
   });
   assert.equal(normalizeRegionParam('/shandong/dezhou.shtml'), 'shandong/dezhou');
+});
+
+test('uses a non-reserved Keychain cache key and six-hour refresh interval', () => {
+  const key = getCacheKey('shandong/dezhou');
+
+  assert.equal(key, 'jau771_oil_widget_shandong_dezhou');
+  assert.equal(key.startsWith('scriptable'), false);
+  assert.equal(CACHE_REFRESH_HOURS, 6);
 });
 
 test('parses qiyoujiage html into oil prices and trend text', () => {

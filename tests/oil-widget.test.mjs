@@ -6,8 +6,10 @@ const require = createRequire(import.meta.url);
 const {
   CACHE_REFRESH_HOURS,
   createOilWidget,
+  buildOilUrl,
   getCacheKey,
   getOilWidgetPlan,
+  loadOilData,
   normalizeRegionParam,
   parseOilHtml,
   parseWidgetParameter,
@@ -134,29 +136,46 @@ test('normalizes Scriptable oil widget parameters', () => {
   assert.deepEqual(parseWidgetParameter(''), {
     region: 'shandong/dezhou',
     showTrend: true,
+    transparentMode: true,
   });
   assert.deepEqual(parseWidgetParameter('hainan/haikou'), {
     region: 'hainan/haikou',
     showTrend: true,
+    transparentMode: true,
   });
   assert.deepEqual(parseWidgetParameter('region=shandong/dezhou,trend=false'), {
     region: 'shandong/dezhou',
     showTrend: false,
+    transparentMode: true,
   });
   assert.deepEqual(parseWidgetParameter('region=shandong/dezhou\nSHOW_TREND=false\nTRANSPARENT_MODE=true'), {
     region: 'shandong/dezhou',
     showTrend: false,
+    transparentMode: true,
   });
   assert.deepEqual(parseWidgetParameter('SHOW_TREND=false\nTRANSPARENT_MODE=true'), {
     region: 'shandong/dezhou',
     showTrend: false,
+    transparentMode: true,
+  });
+  assert.deepEqual(parseWidgetParameter('TRANSPARENT_MODE=false'), {
+    region: 'shandong/dezhou',
+    showTrend: true,
+    transparentMode: false,
   });
   assert.deepEqual(parseWidgetParameter('dezhou'), {
     region: 'shandong/dezhou',
     showTrend: true,
+    transparentMode: true,
+  });
+  assert.deepEqual(parseWidgetParameter('TRANSPARENT_MODE'), {
+    region: 'shandong/dezhou',
+    showTrend: true,
+    transparentMode: true,
   });
   assert.equal(normalizeRegionParam('德州'), 'shandong/dezhou');
   assert.equal(normalizeRegionParam('/shandong/dezhou.shtml'), 'shandong/dezhou');
+  assert.equal(buildOilUrl('dezhou'), 'http://m.qiyoujiage.com/shandong/dezhou.shtml');
 });
 
 test('uses a non-reserved Keychain cache key and six-hour refresh interval', () => {
@@ -184,6 +203,32 @@ test('can hide trend parsing when requested', () => {
   const parsed = parseOilHtml(SAMPLE_HTML, { showTrend: false });
 
   assert.equal(parsed.trendInfo, '');
+});
+
+test('falls back to the default oil region when a requested path returns 404', async () => {
+  const requestedUrls = [];
+  const writes = [];
+  const result = await loadOilData('badregion', {
+    showTrend: true,
+    requestHtml: async (url) => {
+      requestedUrls.push(url);
+      if (url.endsWith('/badregion.shtml')) {
+        throw new Error('HTTP 404');
+      }
+      return SAMPLE_HTML;
+    },
+    readCacheFn: () => null,
+    writeCacheFn: (region, data) => writes.push({ region, data }),
+  });
+
+  assert.deepEqual(requestedUrls, [
+    'http://m.qiyoujiage.com/badregion.shtml',
+    'http://m.qiyoujiage.com/shandong/dezhou.shtml',
+  ]);
+  assert.equal(result.errorMessage, '');
+  assert.equal(result.data.regionName, '德州');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].region, 'shandong/dezhou');
 });
 
 test('builds a medium oil widget plan matching the accepted Egern layout', () => {

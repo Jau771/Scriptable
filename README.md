@@ -49,6 +49,9 @@ Optional widget parameter:
 region=shandong/dezhou,trend=false
 ```
 
+No parameter is required for the default Dezhou widget. Trend display and
+transparent-style rendering are enabled by default.
+
 You can also pass only the region, for example:
 
 ```text

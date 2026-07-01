@@ -2,6 +2,8 @@
 // Paste this file into Scriptable or import it from a raw GitHub URL.
 
 const DEFAULT_REGION = 'shandong/dezhou';
+const DEFAULT_SHOW_TREND = true;
+const DEFAULT_TRANSPARENT_MODE = true;
 const CACHE_PREFIX = 'jau771_oil_widget_';
 const CACHE_REFRESH_HOURS = 6;
 const REGION_ALIASES = {
@@ -45,13 +47,36 @@ function isFalseValue(value) {
   return ['0', 'false', 'no', 'off'].includes(String(value || '').trim().toLowerCase());
 }
 
+function buildOilUrl(region) {
+  return `http://m.qiyoujiage.com/${normalizeRegionParam(region)}.shtml`;
+}
+
+function applyBooleanFlag(result, key, value = 'true') {
+  if (key === 'trend' || key === 'show_trend' || key === 'showtrend') {
+    result.showTrend = !isFalseValue(value);
+    return true;
+  }
+  if (key === 'transparent_mode' || key === 'transparentmode' || key === 'transparent') {
+    result.transparentMode = !isFalseValue(value);
+    return true;
+  }
+  return false;
+}
+
 function parseWidgetParameter(rawParam) {
   const raw = String(rawParam || '').trim();
-  if (!raw) return { region: DEFAULT_REGION, showTrend: true };
+  if (!raw) {
+    return {
+      region: DEFAULT_REGION,
+      showTrend: DEFAULT_SHOW_TREND,
+      transparentMode: DEFAULT_TRANSPARENT_MODE,
+    };
+  }
 
   const result = {
     region: DEFAULT_REGION,
-    showTrend: true,
+    showTrend: DEFAULT_SHOW_TREND,
+    transparentMode: DEFAULT_TRANSPARENT_MODE,
   };
 
   const parts = raw.split(/[\n,;]+/).map((part) => part.trim()).filter(Boolean);
@@ -67,10 +92,12 @@ function parseWidgetParameter(rawParam) {
 
     if (value && (key === 'region' || key === 'city')) {
       result.region = normalizeRegionParam(value);
-    } else if (value && (key === 'trend' || key === 'show_trend' || key === 'showtrend')) {
-      result.showTrend = !isFalseValue(value);
+    } else if (value && applyBooleanFlag(result, key, value)) {
+      continue;
     } else if (['trend=false', 'no-trend', 'notrend'].includes(part.toLowerCase())) {
       result.showTrend = false;
+    } else if (!value && applyBooleanFlag(result, key)) {
+      continue;
     } else if (!part.includes('=')) {
       result.region = normalizeRegionParam(part);
     }
@@ -396,8 +423,7 @@ function addFooter(widget, plan, colors) {
   });
 }
 
-async function fetchOilData(region, { showTrend = true } = {}) {
-  const url = `http://m.qiyoujiage.com/${normalizeRegionParam(region)}.shtml`;
+async function defaultRequestHtml(url) {
   const req = new Request(url);
   req.method = 'GET';
   req.timeoutInterval = 15;
@@ -409,6 +435,12 @@ async function fetchOilData(region, { showTrend = true } = {}) {
   const html = await req.loadString();
   const status = req.response?.statusCode || 200;
   if (status < 200 || status >= 400) throw new Error(`HTTP ${status}`);
+  return html;
+}
+
+async function fetchOilData(region, { showTrend = true, requestHtml = defaultRequestHtml } = {}) {
+  const url = buildOilUrl(region);
+  const html = await requestHtml(url);
   return parseOilHtml(html, { showTrend });
 }
 
@@ -436,14 +468,41 @@ function writeCache(region, data) {
   }
 }
 
-async function loadOilData(region, { showTrend = true } = {}) {
-  const cached = readCache(region);
+async function loadOilData(
+  region,
+  {
+    showTrend = true,
+    requestHtml = defaultRequestHtml,
+    readCacheFn = readCache,
+    writeCacheFn = writeCache,
+  } = {},
+) {
+  const normalizedRegion = normalizeRegionParam(region);
+  const cached = readCacheFn(normalizedRegion);
   try {
-    const data = await fetchOilData(region, { showTrend });
-    writeCache(region, data);
+    const data = await fetchOilData(normalizedRegion, { showTrend, requestHtml });
+    writeCacheFn(normalizedRegion, data);
     return { data, errorMessage: '' };
   } catch (error) {
     if (cached) return { data: cached, errorMessage: '' };
+    if (normalizedRegion !== DEFAULT_REGION) {
+      const defaultCached = readCacheFn(DEFAULT_REGION);
+      try {
+        const data = await fetchOilData(DEFAULT_REGION, { showTrend, requestHtml });
+        writeCacheFn(DEFAULT_REGION, data);
+        return { data, errorMessage: '' };
+      } catch (fallbackError) {
+        if (defaultCached) return { data: defaultCached, errorMessage: '' };
+        return {
+          data: {
+            regionName: '',
+            prices: DEFAULT_PRICES,
+            trendInfo: '',
+          },
+          errorMessage: fallbackError.message || error.message || '加载失败',
+        };
+      }
+    }
     return {
       data: {
         regionName: '',
@@ -499,9 +558,11 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     CACHE_REFRESH_HOURS,
     DEFAULT_REGION,
+    buildOilUrl,
     createOilWidget,
     getCacheKey,
     getOilWidgetPlan,
+    loadOilData,
     normalizeRegionParam,
     parseOilHtml,
     parseWidgetParameter,

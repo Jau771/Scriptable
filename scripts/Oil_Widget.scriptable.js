@@ -204,21 +204,23 @@ function getOilLayout(family) {
   if (normalized === 'small') {
     return {
       family: normalized,
-      widgetPadding: 10,
-      headerFont: 12,
-      trendFont: 10,
-      labelFont: 10,
-      priceFont: 18,
-      footerFont: 10,
-      cardWidth: 58,
-      cardHeight: 54,
+      priceStyle: 'compact',
+      widgetPadding: 9,
+      headerFont: 9,
+      trendFont: 8,
+      labelFont: 8,
+      priceFont: 14,
+      footerFont: 8,
+      cardWidth: 0,
+      cardHeight: 0,
+      compactColumnWidth: 34,
       cardCornerRadius: 12,
-      labelWidth: 40,
-      labelHeight: 18,
+      labelWidth: 0,
+      labelHeight: 0,
       labelCornerRadius: 6,
-      rowGap: 6,
-      sectionGap: 8,
-      priceColumns: 2,
+      rowGap: 3,
+      sectionGap: 5,
+      priceColumns: 4,
     };
   }
   if (normalized === 'large') {
@@ -239,10 +241,12 @@ function getOilLayout(family) {
       rowGap: 8,
       sectionGap: 12,
       priceColumns: 4,
+      priceStyle: 'cards',
     };
   }
   return {
     family: normalized,
+    priceStyle: 'cards',
     widgetPadding: 12,
     headerFont: 13,
     trendFont: 12,
@@ -389,6 +393,47 @@ function addPrices(widget, plan, colors) {
       align: 'center',
     });
     empty.addSpacer();
+    return;
+  }
+
+  if (plan.priceStyle === 'compact') {
+    const labelRow = widget.addStack();
+    labelRow.layoutHorizontally();
+    labelRow.centerAlignContent();
+    for (const item of plan.rows) {
+      const cell = labelRow.addStack();
+      cell.layoutHorizontally();
+      cell.centerAlignContent();
+      cell.size = new Size(plan.compactColumnWidth, 12);
+      addText(cell, item.label, {
+        fontSize: plan.labelFont,
+        color: colors.secondary,
+        bold: true,
+        align: 'center',
+        minScale: 0.7,
+      });
+      if (item !== plan.rows[plan.rows.length - 1]) labelRow.addSpacer();
+    }
+
+    widget.addSpacer(plan.rowGap);
+
+    const priceRow = widget.addStack();
+    priceRow.layoutHorizontally();
+    priceRow.centerAlignContent();
+    for (const item of plan.rows) {
+      const cell = priceRow.addStack();
+      cell.layoutHorizontally();
+      cell.centerAlignContent();
+      cell.size = new Size(plan.compactColumnWidth, 18);
+      addText(cell, item.priceText, {
+        fontSize: plan.priceFont,
+        color: colors.primary,
+        bold: true,
+        align: 'center',
+        minScale: 0.62,
+      });
+      if (item !== plan.rows[plan.rows.length - 1]) priceRow.addSpacer();
+    }
     return;
   }
 

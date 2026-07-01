@@ -251,6 +251,27 @@ test('builds a medium oil widget plan matching the accepted Egern layout', () =>
   assert.equal(plan.cardHeight, 62);
 });
 
+test('builds a compact small oil widget plan matching the accepted Egern layout', () => {
+  const data = parseOilHtml(SAMPLE_HTML, { showTrend: true });
+  const plan = getOilWidgetPlan({
+    family: 'small',
+    data,
+    now: new Date(2026, 6, 1, 15, 14),
+    showTrend: true,
+  });
+
+  assert.equal(plan.family, 'small');
+  assert.equal(plan.priceStyle, 'compact');
+  assert.equal(plan.priceColumns, 4);
+  assert.equal(plan.headerFont, 9);
+  assert.equal(plan.trendFont, 8);
+  assert.equal(plan.labelFont, 8);
+  assert.equal(plan.priceFont, 14);
+  assert.equal(plan.compactColumnWidth, 34);
+  assert.equal(plan.rows.length, 4);
+  assert.deepEqual(plan.rows.map((row) => row.priceText), ['7.90', '8.48', '9.48', '7.52']);
+});
+
 test('renders a medium oil widget with header, four price cards, and footer', () => {
   installScriptableFakes();
   const data = parseOilHtml(SAMPLE_HTML, { showTrend: true });
@@ -275,5 +296,35 @@ test('renders a medium oil widget with header, four price cards, and footer', ()
   assert.equal(cards[0].children[0].children[0].text, '92 号');
   assert.equal(cards[0].children[2].text, '7.90');
   assert.ok(footer.children.some((child) => child.text === '13:06 更新'));
+  assert.ok(footer.children.some((child) => child.text === '元/升'));
+});
+
+test('renders a small oil widget as compact label and price rows', () => {
+  installScriptableFakes();
+  const data = parseOilHtml(SAMPLE_HTML, { showTrend: true });
+  const widget = createOilWidget({
+    family: 'small',
+    data,
+    now: new Date(2026, 6, 1, 15, 14),
+    showTrend: true,
+  });
+
+  const stacks = widget.children.filter((child) => child.type === 'stack');
+  const header = stacks[0];
+  const labels = stacks[1];
+  const prices = stacks[2];
+  const footer = stacks[3];
+  const cardLikeStacks = stacks.filter((stack) => stack.size?.width === 58 && stack.size?.height === 54);
+  const labelCells = labels.children.filter((child) => child.type === 'stack');
+  const priceCells = prices.children.filter((child) => child.type === 'stack');
+
+  assert.ok(header.children.some((child) => child.text === '德州实时油价'));
+  assert.ok(header.children.some((child) => child.text === '7月3日24时调整 ↓ 0.48-0.57'));
+  assert.deepEqual(labelCells.map((cell) => cell.children[0].text), ['92 号', '95 号', '98 号', '柴油']);
+  assert.deepEqual(priceCells.map((cell) => cell.children[0].text), ['7.90', '8.48', '9.48', '7.52']);
+  assert.ok(labelCells.every((cell) => cell.size.width === 34));
+  assert.ok(priceCells.every((cell) => cell.size.width === 34));
+  assert.equal(cardLikeStacks.length, 0);
+  assert.ok(footer.children.some((child) => child.text === '15:14 更新'));
   assert.ok(footer.children.some((child) => child.text === '元/升'));
 });

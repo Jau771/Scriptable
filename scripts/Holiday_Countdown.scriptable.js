@@ -289,9 +289,10 @@ function getLayout(family) {
       maxRows: 6,
       padding: 12,
       itemWidth: 50,
-      itemHeight: 25,
-      rowGap: 7,
+      itemHeight: 22,
+      rowGap: 6,
       capsuleHorizontalPadding: 2,
+      capsuleVerticalPadding: 2,
       minimumScaleFactor: 0.55,
       usesFlexibleSpacers: true,
     };
@@ -304,9 +305,10 @@ function getLayout(family) {
       maxRows: 9,
       padding: 18,
       itemWidth: 61,
-      itemHeight: 26,
-      rowGap: 8,
+      itemHeight: 23,
+      rowGap: 7,
       capsuleHorizontalPadding: 3,
+      capsuleVerticalPadding: 2,
       minimumScaleFactor: 0.6,
       usesFlexibleSpacers: true,
     };
@@ -318,9 +320,10 @@ function getLayout(family) {
     maxRows: 6,
     padding: 14,
     itemWidth: 58,
-    itemHeight: 25,
-    rowGap: 7,
+    itemHeight: 22,
+    rowGap: 6,
     capsuleHorizontalPadding: 2,
+    capsuleVerticalPadding: 2,
     minimumScaleFactor: 0.55,
     usesFlexibleSpacers: true,
   };
@@ -376,7 +379,12 @@ function addCapsule(row, item, layout, colors) {
   capsule.borderWidth = 1;
   capsule.borderColor = colors.border;
   capsule.backgroundColor = new Color('#FFFFFF', 0.12);
-  capsule.setPadding(4, layout.capsuleHorizontalPadding, 4, layout.capsuleHorizontalPadding);
+  capsule.setPadding(
+    layout.capsuleVerticalPadding,
+    layout.capsuleHorizontalPadding,
+    layout.capsuleVerticalPadding,
+    layout.capsuleHorizontalPadding,
+  );
 
   const text = capsule.addText(item.label);
   text.font = Font.mediumSystemFont(layout.fontSize);

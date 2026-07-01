@@ -111,8 +111,10 @@ test('uses fixed medium capsule geometry to avoid Scriptable text ellipsis', () 
   });
 
   assert.equal(plan.itemWidth, 58);
-  assert.equal(plan.itemHeight, 25);
+  assert.equal(plan.itemHeight, 22);
+  assert.equal(plan.rowGap, 6);
   assert.equal(plan.capsuleHorizontalPadding, 2);
+  assert.equal(plan.capsuleVerticalPadding, 2);
   assert.equal(plan.usesFlexibleSpacers, true);
   assert.ok(plan.fontSize <= 11);
   assert.ok(plan.minimumScaleFactor <= 0.6);
@@ -135,7 +137,13 @@ test('renders medium capsules with fixed width and flexible spacing', () => {
   assert.equal(capsules.length, 5);
   assert.deepEqual(spacers.map((spacer) => spacer.length), [undefined, undefined, undefined, undefined]);
   assert.equal(capsules[0].size.width, 58);
-  assert.equal(capsules[0].size.height, 25);
+  assert.equal(capsules[0].size.height, 22);
+  assert.deepEqual(capsules[0].padding, {
+    top: 2,
+    leading: 2,
+    bottom: 2,
+    trailing: 2,
+  });
   assert.equal(capsules[0].children[0].text, '建党节 1天');
 });
 

@@ -63,6 +63,14 @@ function installScriptableFakes() {
         centerAlignText() {},
         rightAlignText() {},
       };
+      Object.defineProperty(child, 'lineLimit', {
+        get() {
+          return this._lineLimit;
+        },
+        set(value) {
+          this._lineLimit = value;
+        },
+      });
       this.children.push(child);
       return child;
     }
@@ -265,9 +273,11 @@ test('builds a compact small oil widget plan matching the accepted Egern layout'
   assert.equal(plan.priceColumns, 4);
   assert.equal(plan.headerFont, 9);
   assert.equal(plan.trendFont, 8);
+  assert.equal(plan.trendLineLimit, 2);
   assert.equal(plan.labelFont, 8);
   assert.equal(plan.priceFont, 14);
   assert.equal(plan.compactColumnWidth, 34);
+  assert.equal(plan.trendInfo, '7月3日24时调整\n↓ 0.48-0.57');
   assert.equal(plan.rows.length, 4);
   assert.deepEqual(plan.rows.map((row) => row.priceText), ['7.90', '8.48', '9.48', '7.52']);
 });
@@ -317,9 +327,13 @@ test('renders a small oil widget as compact label and price rows', () => {
   const cardLikeStacks = stacks.filter((stack) => stack.size?.width === 58 && stack.size?.height === 54);
   const labelCells = labels.children.filter((child) => child.type === 'stack');
   const priceCells = prices.children.filter((child) => child.type === 'stack');
+  const layoutOrder = widget.children.map((child) => (child.type === 'spacer' ? `spacer:${child.length ?? 'flex'}` : child.type));
+  const trendNode = header.children.find((child) => child.text === '7月3日24时调整\n↓ 0.48-0.57');
 
   assert.ok(header.children.some((child) => child.text === '德州实时油价'));
-  assert.ok(header.children.some((child) => child.text === '7月3日24时调整 ↓ 0.48-0.57'));
+  assert.ok(trendNode);
+  assert.equal(trendNode.lineLimit, 2);
+  assert.deepEqual(layoutOrder, ['stack', 'spacer:flex', 'stack', 'spacer:3', 'stack', 'spacer:flex', 'stack']);
   assert.deepEqual(labelCells.map((cell) => cell.children[0].text), ['92 号', '95 号', '98 号', '柴油']);
   assert.deepEqual(priceCells.map((cell) => cell.children[0].text), ['7.90', '8.48', '9.48', '7.52']);
   assert.ok(labelCells.every((cell) => cell.size.width === 34));

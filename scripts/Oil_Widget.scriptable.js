@@ -208,6 +208,7 @@ function getOilLayout(family) {
       widgetPadding: 9,
       headerFont: 9,
       trendFont: 8,
+      trendLineLimit: 2,
       labelFont: 8,
       priceFont: 14,
       footerFont: 8,
@@ -221,6 +222,7 @@ function getOilLayout(family) {
       rowGap: 3,
       sectionGap: 5,
       priceColumns: 4,
+      compactVerticalSpacer: true,
     };
   }
   if (normalized === 'large') {
@@ -242,6 +244,7 @@ function getOilLayout(family) {
       sectionGap: 12,
       priceColumns: 4,
       priceStyle: 'cards',
+      trendLineLimit: 1,
     };
   }
   return {
@@ -262,7 +265,13 @@ function getOilLayout(family) {
     rowGap: 8,
     sectionGap: 10,
     priceColumns: 4,
+    trendLineLimit: 1,
   };
+}
+
+function formatTrendForLayout(trendInfo, layout) {
+  if (!trendInfo || layout.family !== 'small') return trendInfo || '';
+  return String(trendInfo).replace(/\s+(↓|↑)\s+/, '\n$1 ');
 }
 
 function getOilWidgetPlan({ family = 'medium', data, now = new Date(), showTrend = true, errorMessage = '' } = {}) {
@@ -279,7 +288,7 @@ function getOilWidgetPlan({ family = 'medium', data, now = new Date(), showTrend
   return {
     ...layout,
     title: data?.regionName ? `${data.regionName}实时油价` : '实时油价',
-    trendInfo: showTrend ? (data?.trendInfo || '') : '',
+    trendInfo: showTrend ? formatTrendForLayout(data?.trendInfo || '', layout) : '',
     updatedText: `${formatTime(now)} 更新`,
     unitText: '元/升',
     rows,
@@ -339,6 +348,7 @@ function addHeader(widget, plan, colors) {
       fontSize: plan.trendFont,
       color: colors.primary,
       align: 'right',
+      lineLimit: plan.trendLineLimit || 1,
       minScale: 0.68,
     });
   }
@@ -568,9 +578,11 @@ function createOilWidget({ family = 'medium', data, now = new Date(), showTrend 
   widget.refreshAfterDate = new Date(Date.now() + CACHE_REFRESH_HOURS * 60 * 60 * 1000);
 
   addHeader(widget, plan, colors);
-  widget.addSpacer(plan.sectionGap);
+  if (plan.compactVerticalSpacer) widget.addSpacer();
+  else widget.addSpacer(plan.sectionGap);
   addPrices(widget, plan, colors);
-  widget.addSpacer(plan.sectionGap);
+  if (plan.compactVerticalSpacer) widget.addSpacer();
+  else widget.addSpacer(plan.sectionGap);
   addFooter(widget, plan, colors);
 
   return widget;

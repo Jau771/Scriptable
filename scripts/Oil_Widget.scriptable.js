@@ -4,6 +4,10 @@
 const DEFAULT_REGION = 'shandong/dezhou';
 const CACHE_PREFIX = 'jau771_oil_widget_';
 const CACHE_REFRESH_HOURS = 6;
+const REGION_ALIASES = {
+  dezhou: DEFAULT_REGION,
+  '德州': DEFAULT_REGION,
+};
 const DEFAULT_PRICES = {
   p92: null,
   p95: null,
@@ -26,7 +30,19 @@ function normalizeRegionParam(value) {
     .replace(/\.shtml(?:\?.*)?$/i, '')
     .replace(/\/+$/g, '');
 
-  return raw || DEFAULT_REGION;
+  const aliasKey = raw.toLowerCase();
+  return REGION_ALIASES[raw] || REGION_ALIASES[aliasKey] || raw || DEFAULT_REGION;
+}
+
+function normalizeParamKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+}
+
+function isFalseValue(value) {
+  return ['0', 'false', 'no', 'off'].includes(String(value || '').trim().toLowerCase());
 }
 
 function parseWidgetParameter(rawParam) {
@@ -38,16 +54,21 @@ function parseWidgetParameter(rawParam) {
     showTrend: true,
   };
 
-  const parts = raw.split(',').map((part) => part.trim()).filter(Boolean);
+  const parts = raw.split(/[\n,;]+/).map((part) => part.trim()).filter(Boolean);
   for (const part of parts) {
+    if (/^https?:\/\/m\.qiyoujiage\.com\//i.test(part)) {
+      result.region = normalizeRegionParam(part);
+      continue;
+    }
+
     const [rawKey, ...rawValue] = part.split('=');
-    const key = rawKey.trim().toLowerCase();
+    const key = normalizeParamKey(rawKey);
     const value = rawValue.join('=').trim();
 
     if (value && (key === 'region' || key === 'city')) {
       result.region = normalizeRegionParam(value);
-    } else if (value && (key === 'trend' || key === 'show_trend')) {
-      result.showTrend = !['0', 'false', 'no', 'off'].includes(value.toLowerCase());
+    } else if (value && (key === 'trend' || key === 'show_trend' || key === 'showtrend')) {
+      result.showTrend = !isFalseValue(value);
     } else if (['trend=false', 'no-trend', 'notrend'].includes(part.toLowerCase())) {
       result.showTrend = false;
     } else if (!part.includes('=')) {

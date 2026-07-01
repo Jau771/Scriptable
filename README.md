@@ -55,6 +55,10 @@ You can also pass only the region, for example:
 hainan/haikou
 ```
 
+Comma, semicolon, and newline-separated parameters are supported. Legacy
+Egern-style `SHOW_TREND=false` is accepted, and `TRANSPARENT_MODE=true` is
+ignored because Scriptable handles transparent widget backgrounds differently.
+
 Default region: `shandong/dezhou`.
 
 ## Development

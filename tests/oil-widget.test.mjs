@@ -143,6 +143,19 @@ test('normalizes Scriptable oil widget parameters', () => {
     region: 'shandong/dezhou',
     showTrend: false,
   });
+  assert.deepEqual(parseWidgetParameter('region=shandong/dezhou\nSHOW_TREND=false\nTRANSPARENT_MODE=true'), {
+    region: 'shandong/dezhou',
+    showTrend: false,
+  });
+  assert.deepEqual(parseWidgetParameter('SHOW_TREND=false\nTRANSPARENT_MODE=true'), {
+    region: 'shandong/dezhou',
+    showTrend: false,
+  });
+  assert.deepEqual(parseWidgetParameter('dezhou'), {
+    region: 'shandong/dezhou',
+    showTrend: true,
+  });
+  assert.equal(normalizeRegionParam('德州'), 'shandong/dezhou');
   assert.equal(normalizeRegionParam('/shandong/dezhou.shtml'), 'shandong/dezhou');
 });
 
